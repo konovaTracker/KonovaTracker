@@ -2,6 +2,8 @@ const express = require("express");
 const { Pool } = require("pg");
 const app = express();
 
+// Use the port from environment variables or default to 10000
+const PORT = process.env.PORT || 10000;
 app.use(express.json());
 
 // Connect to Postgres using your DATABASE_URL
@@ -9,6 +11,12 @@ const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
 });
 
+// Root route
+app.get("/", (req, res) => {
+  res.send("Konova Tracker is LIVE 🚀");
+});
+
+// Test route
 app.get("/test", (req, res) => {
   res.send("Test route working ✅");
 });
@@ -17,7 +25,9 @@ app.get("/test", (req, res) => {
 app.post("/track", async (req, res) => {
   const { username } = req.body;
   try {
-    await pool.query("CREATE TABLE IF NOT EXISTS users (id SERIAL PRIMARY KEY, username TEXT)");
+    await pool.query(
+      "CREATE TABLE IF NOT EXISTS users (id SERIAL PRIMARY KEY, username TEXT)"
+    );
     await pool.query("INSERT INTO users (username) VALUES ($1)", [username]);
     res.send(`User ${username} tracked!`);
   } catch (err) {
@@ -37,5 +47,7 @@ app.get("/users", async (req, res) => {
   }
 });
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+// Start the server (only once)
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
