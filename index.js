@@ -1,37 +1,69 @@
-// index.js
-// Import PostgreSQL client
+const express = require('express');
 const { Pool } = require('pg');
+require('dotenv').config();
 
-// Read database config from environment variables
+const app = express();
+
+// ✅ Read PORT from environment, default to 3000 for local development
+const port = process.env.PORT || 3000;
+
+// ✅ Configure PostgreSQL connection using DATABASE_URL
 const pool = new Pool({
-  host: process.env.DB_HOST,        // e.g., 'konova-server-94821.database.windows.net'
-  user: process.env.DB_USER,        // DB username
-  password: process.env.DB_PASS,    // DB password
-  database: process.env.DB_NAME,    // e.g., 'konova_tracker'
-  port: 5432,
-  ssl: { rejectUnauthorized: false } // Needed for Azure SQL / PostgreSQL over SSL
+  connectionString: process.env.DATABASE_URL,
+  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
 });
 
-// Simple test query to verify DB connection
-pool.query('SELECT NOW()', (err, res) => {
-  if (err) {
-    console.error('Database connection failed:', err);
-  } else {
-    console.log('Database connected! Current time:', res.rows[0]);
+// Middleware
+app.use(express.json());
+
+// ✅ Health check endpoint
+app.get('/health', (req, res) => {
+  res.json({ status: 'OK', timestamp: new Date().toISOString() });
+});
+
+// ✅ Database connectivity test
+app.get('/db-test', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT NOW()');
+    res.json({ 
+      status: 'Database connected', 
+      timestamp: result.rows[0].now 
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      status: 'Database connection failed',
+      error: error.message 
+    });
   }
 });
 
-// Example: minimal Express server
-const express = require('express');
-const app = express();
-
-app.use(express.json());
-
+// ✅ Main landing page
 app.get('/', (req, res) => {
-  res.send('Konova Tracker is LIVE!');
+  res.json({ 
+    message: 'Konova Tracker is LIVE!',
+    endpoints: {
+      health: '/health',
+      dbTest: '/db-test'
+    }
+  });
 });
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+// Error handling middleware
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).json({ error: 'Internal server error' });
+});
+
+// ✅ Start server
+app.listen(port, '0.0.0.0', () => {
+  console.log(`🚀 Server running on port ${port}`);
+  console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`Database: ${process.env.DATABASE_URL ? 'Configured' : 'Not configured'}`);
+});
+
+// Graceful shutdown
+process.on('SIGTERM', () => {
+  console.log('SIGTERM received, closing server...');
+  pool.end();
+  process.exit(0);
 });
