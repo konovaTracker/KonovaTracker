@@ -1,11 +1,24 @@
 {
   "name": "konova-tracker",
   "version": "1.0.0",
+  "description": "Node.js API backend for resource tracking, backed by PostgreSQL.",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js"
+    "start": "node index.js",
+    "dev": "nodemon index.js"
+  },
+  "engines": {
+    "node": "22.x"
   },
   "dependencies": {
-    "express": "^4.18.2"
-  }
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "pg": "^8.13.3"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  },
+  "keywords": ["resource-tracker", "postgres", "nodejs", "express"],
+  "author": "Konova",
+  "license": "MIT"
 }
