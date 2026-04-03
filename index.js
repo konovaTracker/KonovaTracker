@@ -1,56 +1,37 @@
-const express = require("express");
-const { Pool } = require("pg");
+// index.js
+// Import PostgreSQL client
+const { Pool } = require('pg');
 
+// Read database config from environment variables
+const pool = new Pool({
+  host: process.env.DB_HOST,        // e.g., 'konova-server-94821.database.windows.net'
+  user: process.env.DB_USER,        // DB username
+  password: process.env.DB_PASS,    // DB password
+  database: process.env.DB_NAME,    // e.g., 'konova_tracker'
+  port: 5432,
+  ssl: { rejectUnauthorized: false } // Needed for Azure SQL / PostgreSQL over SSL
+});
+
+// Simple test query to verify DB connection
+pool.query('SELECT NOW()', (err, res) => {
+  if (err) {
+    console.error('Database connection failed:', err);
+  } else {
+    console.log('Database connected! Current time:', res.rows[0]);
+  }
+});
+
+// Example: minimal Express server
+const express = require('express');
 const app = express();
+
 app.use(express.json());
 
-const PORT = process.env.PORT || 10000;
-
-// Connect to Postgres
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
+app.get('/', (req, res) => {
+  res.send('Konova Tracker is LIVE!');
 });
 
-// Routes
-app.get("/", (req, res) => {
-  res.send("Konova Tracker is LIVE 🚀");
-});
-
-app.get("/test", (req, res) => {
-  res.send("Test route working ✅");
-});
-
-app.post("/track", async (req, res) => {
-  const { username } = req.body;
-
-  try {
-    await pool.query(
-      "CREATE TABLE IF NOT EXISTS users (id SERIAL PRIMARY KEY, username TEXT)"
-    );
-
-    await pool.query(
-      "INSERT INTO users (username) VALUES ($1)",
-      [username]
-    );
-
-    res.send(`User ${username} tracked!`);
-  } catch (err) {
-    console.error(err);
-    res.status(500).send("Database error");
-  }
-});
-
-app.get("/users", async (req, res) => {
-  try {
-    const result = await pool.query("SELECT * FROM users");
-    res.json(result.rows);
-  } catch (err) {
-    console.error(err);
-    res.status(500).send("Database error");
-  }
-});
-
-// Start server (ONLY ONCE)
+const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
